@@ -9,6 +9,7 @@ impl Memory {
     pub fn new() -> Self {
         Self {
             segments: vec![None],
+            /* NEEDSWORK: should be pretty big, but change here for optimzation */
             free_list: Vec::with_capacity(1 << 16),
         }
     }
@@ -16,13 +17,17 @@ impl Memory {
     pub fn map_segment(&mut self, size: usize) -> usize {
         let segment = vec![0; size];
         /* if there is a free identifier, just use that */
-        if let Some(idx) = self.free_list.pop() {
-            self.segments[idx] = Some(segment);
-            idx
-        } else {
-            /* add a new identifier */
-            self.segments.push(Some(segment));
-            self.segments.len() - 1
+        let idx = self.free_list.pop();
+        match idx {
+            Some(index) => {
+                self.segments[index] = Some(segment);
+                index
+            }
+            None => {
+                /* add a new identifier */
+                self.segments.push(Some(segment));
+                self.segments.len() - 1
+            }
         }
     }
 

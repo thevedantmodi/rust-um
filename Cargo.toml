@@ -1,6 +1,13 @@
 [package]
 name = "um"
-version = "0.1.0"
-edition = "2024"
+version = "1.0.0"
+edition = "2021"
 
 [dependencies]
+
+[profile.release]
+opt-level = 3 # Maximum optimization for performance in release builds
+lto = "fat" # Enable aggressive Link Time Optimization
+codegen-units = 1 # Reduce code generation units for better optimization (can increase compile time)
+panic = "abort" # Abort on panic instead of unwinding (can reduce binary size and improve performance)
+strip = "debuginfo" # Remove debug information from the binary

@@ -47,7 +47,8 @@ impl UM {
 
         let mut instructions: Vec<UmInstruction> = Vec::new();
         for i in (0..bytes.len()).step_by(4) {
-            let word = UmInstruction::from_be_bytes([bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]]);
+            let word: UmWord =
+                UmInstruction::from_be_bytes([bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]]);
             instructions.push(word);
         }
 
@@ -102,6 +103,7 @@ impl UM {
         }
     }
 
+    #[inline(always)]
     fn execute(&mut self, op: UmOp, a: usize, b: usize, c: usize) {
         match op {
             UmOperations::CMOV => {
@@ -112,12 +114,18 @@ impl UM {
             UmOperations::SLOAD => {
                 let seg = self.registers[b] as usize;
                 let offset = self.registers[c] as usize;
-                self.registers[a] = self.memory.segments[seg].as_ref().unwrap()[offset];
+                self.registers[a] = match &(self.memory.segments[seg]) {
+                    Some(segment) => segment[offset],
+                    None => panic!("No segment at {}", seg),
+                }
             }
             UmOperations::SSTORE => {
                 let seg = self.registers[a] as usize;
                 let offset = self.registers[b] as usize;
-                self.memory.segments[seg].as_mut().unwrap()[offset] = self.registers[c];
+                match &mut (self.memory.segments[seg]) {
+                    Some(segment) => segment[offset] = self.registers[c],
+                    None => panic!("No segment at {}", seg),
+                }
             }
             UmOperations::ADD => {
                 self.registers[a] = self.registers[b].wrapping_add(self.registers[c])
@@ -129,8 +137,7 @@ impl UM {
             UmOperations::NAND => self.registers[a] = !(self.registers[b] & self.registers[c]),
             UmOperations::MAP => {
                 let size = self.registers[c] as usize;
-                let idx = self.memory.map_segment(size);
-                self.registers[b] = idx as u32;
+                self.registers[b] = self.memory.map_segment(size) as u32;
             }
             UmOperations::UNMAP => self.memory.unmap_segment(self.registers[c] as usize),
             UmOperations::OUT => {
@@ -138,18 +145,19 @@ impl UM {
             }
             UmOperations::IN => {
                 let mut buf = [0u8; 1];
-                let read_eof = io::stdin().read_exact(&mut buf).is_ok();
-                if read_eof {
-                    self.registers[c] = buf[0] as u32;
-                } else {
-                    self.registers[c] = 0xFFFFFFFFu32;
+                match io::stdin().read_exact(&mut buf) {
+                    Ok(_) => self.registers[c] = buf[0] as u32,
+                    Err(_) => self.registers[c] = 0xFFFFFFFFu32,
                 }
             }
             UmOperations::LOADP => {
                 if self.registers[b] != 0 {
                     let seg = self.registers[b] as usize;
-                    let dup = self.memory.segments[seg].as_ref().unwrap().clone();
-                    self.memory.segments[0] = Some(dup);
+                    let duplicate = match &(self.memory.segments[seg]) {
+                        Some(segment) => segment.clone(),
+                        None => panic!("No segment at {}", seg),
+                    };
+                    self.memory.segments[0] = Some(duplicate);
                 }
                 self.pc = self.registers[c] as usize;
             }
