@@ -1,0 +1,16 @@
+<binop> ::= + | * | / | nand
+<reg> ::= rNN, where NN is any decimal number (one numeral per N)
+<reserved> ::= if | m | map | unmap | out | in | <reg> | halt
+<k> ::= <hex-literal> | <decimal-literal> | <character-literal> not reserved
+<instr> ::= 
+    <reg> := <reg> <binop> <reg>
+  | <reg> := m[<reg>][<reg>]
+  | <reg> := <reg> if <reg>
+  | <reg> := map <reg>
+  | <reg> := <k>
+  | unmap <reg>
+  | out <reg> 
+  | in <reg>
+  | m[<reg>][<reg>] := <reg>
+  | goto m[<reg>][<reg>]
+  | halt

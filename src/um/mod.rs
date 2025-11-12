@@ -9,7 +9,8 @@ pub struct UM {
 }
 pub type UmWord = u32;
 type UmInstruction = u32;
-enum UmOperations {
+#[derive(PartialEq, Eq, Debug)]
+pub enum UmOperations {
     /* Will work like a C enum with indexing if you cast with `as` */
     CMOV = 0,
     SLOAD = 1,
@@ -26,7 +27,7 @@ enum UmOperations {
     LOADP = 12,
     LV = 13,
 }
-type UmOp = UmOperations;
+pub type UmOp = UmOperations;
 
 impl UM {
     pub fn new() -> Self {
