@@ -1,4 +1,4 @@
-use crate::um::{UmOp, UmOperations, UmWord, UM};
+use crate::um::{UmOp, UmOperations, UmWord};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 
@@ -209,7 +209,7 @@ impl UMAssembler {
 
     pub fn write_mach_code(&mut self, program: &Vec<u32>, opath: &str) -> io::Result<()> {
         let mut file = File::create(opath)?;
-        for (i, instr) in program.iter().enumerate() {
+        for instr in program.iter() {
             let bytes = instr.to_be_bytes(); // big-endian byte array [b0, b1, b2, b3]
             file.write_all(&bytes)?;
         }
@@ -441,6 +441,58 @@ mod tests {
                 0,
                 0
             ))
+        );
+    }
+
+    #[test]
+    fn test_three_reg_all_zero() {
+        assert_eq!(UMAssembler::build_three_reg_instruction(0, 0, 0, 0), 0x00000000u32);
+    }
+
+    #[test]
+    fn test_three_reg_op1() {
+        assert_eq!(UMAssembler::build_three_reg_instruction(1, 0, 0, 0), 0x10000000u32);
+    }
+
+    #[test]
+    fn test_three_reg_op1_r7_r1() {
+        assert_eq!(
+            UMAssembler::build_three_reg_instruction(1, 0, 7, 1),
+            0b00010000000000000000000000111001
+        );
+    }
+
+    #[test]
+    fn test_three_reg_op10_r7_r1() {
+        assert_eq!(
+            UMAssembler::build_three_reg_instruction(10, 0, 7, 1),
+            0b10100000000000000000000000111001
+        );
+    }
+
+    #[test]
+    fn test_three_reg_op10_r1_r7_r1() {
+        assert_eq!(
+            UMAssembler::build_three_reg_instruction(10, 1, 7, 1),
+            0b10100000000000000000000001111001
+        );
+    }
+
+    #[test]
+    fn test_load_value_r2_5() {
+        assert_eq!(UMAssembler::build_load_value_instruction(13, 2, 5), 0xD4000005u32);
+    }
+
+    #[test]
+    fn test_load_value_r3_5() {
+        assert_eq!(UMAssembler::build_load_value_instruction(13, 3, 5), 0xD6000005u32);
+    }
+
+    #[test]
+    fn test_load_value_r3_max() {
+        assert_eq!(
+            UMAssembler::build_load_value_instruction(13, 3, 0xFFFFFFFFu32),
+            0xD7FFFFFFu32
         );
     }
 }
